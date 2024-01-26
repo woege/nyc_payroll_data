@@ -1,0 +1,110 @@
+{
+	"name": "dataflow_aggregate_data",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "nycpayroll_2020",
+						"type": "DatasetReference"
+					},
+					"name": "nycpayrollhistorical"
+				},
+				{
+					"dataset": {
+						"referenceName": "table_synapse_nycpayroll_summary",
+						"type": "DatasetReference"
+					},
+					"name": "tablesynapsenycpayrollsummary"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "table_synapse_nycpayroll_summary",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "union1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "aggregate1"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     fiscal_year as integer",
+				"}",
+				"source(output(",
+				"          FiscalYear as string,",
+				"          PayrollNumber as string,",
+				"          AgencyID as string,",
+				"          AgencyName as string,",
+				"          EmployeeID as string,",
+				"          LastName as string,",
+				"          FirstName as string,",
+				"          AgencyStartDate as string,",
+				"          WorkLocationBorough as string,",
+				"          TitleCode as string,",
+				"          TitleDescription as string,",
+				"          LeaveStatusasofJune30 as string,",
+				"          BaseSalary as string,",
+				"          PayBasis as string,",
+				"          RegularHours as string,",
+				"          RegularGrossPaid as float,",
+				"          OTHours as string,",
+				"          TotalOTPaid as float,",
+				"          TotalOtherPay as float",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> nycpayrollhistorical",
+				"source(output(",
+				"          FiscalYear as string,",
+				"          AgencyName as string,",
+				"          TotalPaid as double",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table',",
+				"     staged: true) ~> tablesynapsenycpayrollsummary",
+				"nycpayrollhistorical, tablesynapsenycpayrollsummary union(byName: true)~> union1",
+				"union1 filter(toInteger(FiscalYear) >= $fiscal_year) ~> filter1",
+				"filter1 derive(TotalPaid = RegularGrossPaid + TotalOTPaid + TotalOtherPay) ~> derivedColumn1",
+				"derivedColumn1 aggregate(groupBy(FiscalYear,",
+				"          AgencyName),",
+				"     TotalPaid = sum(TotalPaid)) ~> aggregate1",
+				"aggregate1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          FiscalYear as string,",
+				"          AgencyName as string,",
+				"          TotalPaid as double",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
+				"     format: 'table',",
+				"     staged: true,",
+				"     allowCopyCommand: true,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+			]
+		}
+	}
+}

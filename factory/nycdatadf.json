@@ -1,0 +1,9 @@
+{
+	"name": "nycdatadf",
+	"location": "germanywestcentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "4e9e1b52-f1af-4da7-86dd-a44f8d89275b",
+		"tenantId": "ce99bc36-61cd-41a3-94cd-cbf0a79c540f"
+	}
+}
